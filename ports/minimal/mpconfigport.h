@@ -32,14 +32,18 @@
 typedef long mp_off_t;
 
 // We need to provide a declaration/definition of alloca()
+#if defined(__FreeBSD__)
+#include <stdlib.h>  // FreeBSD declares alloca() via <stdlib.h>; no <alloca.h>
+#else
 #include <alloca.h>
+#endif
 
 #define MICROPY_HW_BOARD_NAME "minimal"
 #define MICROPY_HW_MCU_NAME "unknown-cpu"
 
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
 #define MICROPY_MIN_USE_STDOUT (1)
-#define MICROPY_HEAP_SIZE      (25600) // heap size 25 kilobytes
+#define MICROPY_HEAP_SIZE      (1024 * 1024) // hosted build: 1 MiB heap
 #endif
 
 #ifdef __thumb__
