@@ -27,6 +27,9 @@ FLAKY_REASON_PREFIX = "flaky"
 # File with the test results.
 _RESULTS_FILE = "_results.json"
 
+# Prefix for test comment-lines containing a list of requirements for that test.
+_REQUIREMENT_PREFIX = b"# requires:"
+
 # Maximum time to run a single test, in seconds.
 TEST_TIMEOUT = float(os.environ.get("MICROPY_TEST_TIMEOUT", 30))
 
@@ -113,6 +116,32 @@ os.chdir('/__vfstest')
 {import_prologue}
 __import__('__injected_test')
 """
+
+
+class Test:
+    def __init__(self, filename):
+        # Make absolute filename, with canonical / for path separator.
+        self.filename_abs = os.path.abspath(filename).replace("\\", "/")
+
+        # If filename is one of our own tests always make it relative to our
+        # tests/ dir and otherwise use the absolute path, regardless of actual path
+        # passed, such that display and result output is always the same.
+        try:
+            test_file_relpath = os.path.relpath(filename, start=base_path())
+            if not test_file_relpath.startswith(".."):
+                filename = test_file_relpath
+            else:
+                filename = self.filename_abs
+        except ValueError:
+            # Path on different drive on Windows.
+            filename = self.filename_abs
+
+        # Use canonical / for path separator.
+        self.filename = filename.replace("\\", "/")
+
+        # Initialise requirements for this test.
+        self.requires_feature = set()
+        self.requires_target_wiring = False
 
 
 class PyboardNodeRunner:
@@ -325,6 +354,33 @@ def run_script_on_remote_target(pyb, args, test_file, is_special, requires_targe
             had_crash = True
 
     return had_crash, output_mupy
+
+
+# Given a list of filenames, create and return a corresponding list of Test objects.
+def create_test_list(test_filenames: [str]) -> [Test]:
+    tests = []
+    for filename in test_filenames:
+        test = Test(filename)
+        requirements = []
+        with open(filename, "rb") as f:
+            while True:
+                line = f.readline()
+                if not line.startswith(b"#"):
+                    break
+                if line.startswith(_REQUIREMENT_PREFIX):
+                    line = line[len(_REQUIREMENT_PREFIX) :]
+                    requirements.extend(str(r, "utf-8") for r in line.split())
+        for requirement in requirements:
+            if requirement in ("native", "reverse-op", "slice", "viper"):
+                test.requires_feature.add(requirement)
+            elif requirement == "target-wiring":
+                test.requires_target_wiring = True
+            else:
+                print()
+                print(f"{filename}: unknown test requirement: {requirement}")
+                sys.exit(2)
+        tests.append(test)
+    return tests
 
 
 # Print a summary of the results and save them to a JSON file.

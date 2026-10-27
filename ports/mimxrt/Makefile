@@ -285,6 +285,7 @@ SHARED_SRC_C += \
 	shared/libc/printf.c \
 	shared/libc/string0.c \
 	shared/netutils/dhcpserver.c \
+	shared/netutils/get_mac_ascii.c \
 	shared/netutils/netutils.c \
 	shared/netutils/trace.c \
 	shared/readline/readline.c \
@@ -477,10 +478,14 @@ else
 endif
 
 
-# All settings for Ethernet support are controller by the value of MICROPY_PY_LWIP
+# All settings for Ethernet support are controller by the value of MICROPY_PY_LWIP.
+# A KSZ8081RNA has to be switched to 50MHz RMII clock mode.  A KSZ8081RND is in
+# that mode by default, and the same register bit selects 25MHz mode instead.
 ifeq ($(MICROPY_PY_LWIP),1)
+ifneq ($(MICROPY_PY_NETWORK_PHYKSZ8081RND),1)
 CFLAGS += \
 	-DFSL_FEATURE_PHYKSZ8081_USE_RMII50M_MODE=1
+endif
 endif
 
 ifdef MICROPY_HW_FLASH_CLK
