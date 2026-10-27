@@ -10,6 +10,36 @@ This is the MicroPython project, an implementation of Python 3.x for
 microcontrollers, embedded systems and other constrained platforms.
 You can find the official website at [micropython.org](http://www.micropython.org).
 
+
+
+# PS5 Usage:
+
+`echo "print(1000+1222)" | nc -q 0 192.168.0.125 9023`
+ or 
+`nc -q 0 192.168.0.125 9023 < python_file.py`
+
+and theres a few custom ps5 functions with 
+
+```
+`import ps5`: console-specific helpers for the PS5 micropython build.
+//
+//   ps5.escalate()              jailbreak creds: authid + caps + setuid(0)
+//   ps5.kread(addr, len)        kernel memory -> bytes
+//   ps5.kwrite(addr, data)      kernel memory <- bytes-like
+//   ps5.kbase()                 kernel .text base (post-KASLR)
+//   ps5.kslide()                KASLR slide vs 0xffffffff80210000
+//   ps5.notify(msg)             system notification popup
+//   ps5.toast(title, body)      interactive toast (libSceNotification)
+//   ps5.klog(msg)               write to the kernel log
+//   ps5.find_pid(name)          pid by process name, -1 if absent
+//   ps5.pread(pid, addr, len)   other-process memory -> bytes (ptrace)
+//   ps5.pwrite(pid, addr, data) other-process memory <- bytes-like
+//   ps5.syscall(nr, *args)      arbitrary syscall, up to 6 args
+
+```
+
+
+
 MicroPython implements the entire Python 3.4 syntax (including exceptions,
 `with`, `yield from`, etc., and additionally `async`/`await` keywords from
 Python 3.5 and some select features from later versions). The following core
